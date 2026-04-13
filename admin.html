@@ -3,179 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Grada Virtual</title>
+    <title>Panel de Control - Grada Virtual</title>
     <style>
-        :root { 
-            --accent: #00e5ff; 
-            --text: #e0e0e0; 
-        }
+        :root { --accent: #00e5ff; --bg: #121212; --card: #1e1e1e; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; padding: 20px; margin: 0; }
+        .container { max-width: 500px; margin: 0 auto; }
+        h1 { color: var(--accent); text-align: center; font-size: 24px; }
         
-        body { 
-            font-family: sans-serif; 
-            margin: 0; 
-            color: var(--text); 
-            height: 100vh; 
-            display: flex; 
-            flex-direction: column; 
-            
-            /* NUEVO: IMAGEN DE FONDO DEL ESTADIO */
-            background-image: url('https://images.unsplash.com/photo-1518605368461-1ee7c5320d73?ixlib=rb-4.0.3&auto=format&fit=crop&w=1500&q=80');
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
-        }
+        .card { background: var(--card); padding: 20px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        .card h3 { margin-top: 0; border-bottom: 1px solid #333; padding-bottom: 10px; font-size: 18px; }
         
-        /* NUEVO: EFECTO CRISTAL (Fondo negro semitransparente + Desenfocado) */
-        header { 
-            background: rgba(20, 20, 20, 0.85); /* 85% opaco */
-            backdrop-filter: blur(10px); /* Desenfoque estilo Apple */
-            padding: 15px; 
-            border-bottom: 1px solid rgba(255,255,255,0.1); 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-        }
-        #contador { font-size: 14px; color: var(--accent); }
-
-        #seleccion-equipo { 
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(10, 10, 10, 0.95); /* Casi negro para que no distraiga al elegir */
-            backdrop-filter: blur(15px);
-            z-index: 100; display: flex; flex-direction: column; 
-            justify-content: center; align-items: center; padding: 20px; box-sizing: border-box;
-        }
-        .btn-equipo { 
-            width: 100%; max-width: 300px; padding: 20px; margin: 10px; 
-            border: 2px solid var(--accent); background: rgba(0, 0, 0, 0.5); 
-            color: white; font-size: 18px; border-radius: 10px; cursor: pointer;
-            backdrop-filter: blur(5px);
-            transition: 0.3s;
-        }
-        .btn-equipo:hover { background: var(--accent); color: black; }
-
-        /* EL HISTORIAL AHORA ES MÁS TRANSPARENTE PARA DEJAR VER EL ESTADIO */
-        #chat-historial { 
-            flex-grow: 1; 
-            padding: 20px; 
-            overflow-y: auto; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 10px; 
-            background: rgba(0, 0, 0, 0.6); /* 60% opaco, deja ver la imagen */
-            backdrop-filter: blur(4px);
-        }
+        .input-group { margin-bottom: 15px; }
+        label { display: block; font-size: 12px; color: #888; text-transform: uppercase; margin-bottom: 5px; }
+        input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #333; background: #2a2a2a; color: white; box-sizing: border-box; }
         
-        .msg { background: rgba(40, 40, 40, 0.9); padding: 10px 15px; border-radius: 8px; max-width: 85%; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
-        .msg-propio { align-self: flex-end; background: rgba(0, 123, 255, 0.9); }
-        .equipo-tag { font-weight: bold; font-size: 12px; display: block; margin-bottom: 4px; color: var(--accent); }
-        
-        .controles { 
-            display: flex; 
-            padding: 10px; 
-            background: rgba(20, 20, 20, 0.85); 
-            backdrop-filter: blur(10px);
-            border-top: 1px solid rgba(255,255,255,0.1); 
-        }
-        input { flex-grow: 1; padding: 12px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.5); color: white; outline: none; }
-        input::placeholder { color: #aaa; }
-        button#btnEnviar { background: none; border: none; color: var(--accent); font-size: 24px; cursor: pointer; margin-left: 10px; }
+        button { width: 100%; padding: 15px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; text-transform: uppercase; margin-top: 10px; transition: 0.2s; }
+        .btn-main { background: var(--accent); color: #000; }
+        .btn-main:active { transform: scale(0.98); }
+        .btn-open { background: #28a745; color: white; }
+        .btn-close { background: #dc3545; color: white; }
+        .btn-clear { background: #ffc107; color: black; }
     </style>
 </head>
 <body>
+    <div class="container">
+        <h1 id="bar-display">Panel de Administración</h1>
 
-    <div id="seleccion-equipo">
-        <h2>¿De qué equipo eres?</h2>
-        <div id="lista-equipos">Esperando configuración del bar...</div>
-    </div>
+        <div class="card">
+            <h3>🏟️ Configurar Partido</h3>
+            <div class="input-group">
+                <label>Equipo Local</label>
+                <input id="eq1" type="text" placeholder="Ej: Real Madrid">
+                <input id="img1" type="text" placeholder="URL del escudo (Opcional)">
+            </div>
+            <div class="input-group">
+                <label>Equipo Visitante</label>
+                <input id="eq2" type="text" placeholder="Ej: FC Barcelona">
+                <input id="img2" type="text" placeholder="URL del escudo (Opcional)">
+            </div>
+            <button class="btn-main" onclick="actualizarPartido()">Actualizar Grada Virtual</button>
+        </div>
 
-    <header>
-        <span id="titulo-bar">Cargando...</span>
-        <span id="contador">0 personas online</span>
-    </header>
-
-    <div id="chat-historial"></div>
-
-    <div class="controles">
-        <input id="cajaTexto" type="text" placeholder="Escribe un mensaje..." autocomplete="off">
-        <button id="btnEnviar" onclick="enviarMensaje()">➤</button>
+        <div class="card">
+            <h3>⚙️ Gestión del Chat</h3>
+            <button class="btn-open" onclick="enviarOrden('admin_abrir_chat')">Abrir Chat</button>
+            <button class="btn-close" onclick="enviarOrden('admin_cerrar_chat')">Cerrar Chat</button>
+            <button class="btn-clear" onclick="enviarOrden('admin_limpiar_chat')">Vaciar Mensajes</button>
+        </div>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
-        let miEquipo = "";
         const params = new URLSearchParams(window.location.search);
-        const nombreBar = params.get('bar') || "Bar Genérico";
+        const barId = params.get('bar') || "Bar Genérico";
+        document.getElementById('bar-display').innerText = "Panel: " + barId;
 
-        document.getElementById('titulo-bar').innerText = nombreBar;
-        socket.emit('unirse_sala', nombreBar);
+        socket.emit('unirse_sala', barId);
 
-        socket.on('configuracion_equipos', (equipos) => {
-            const contenedor = document.getElementById('lista-equipos');
-            contenedor.innerHTML = "";
-            if (equipos.length === 0) {
-                contenedor.innerText = "El dueño aún no ha configurado los equipos de hoy.";
-                return;
-            }
-            equipos.forEach(eq => {
-                const btn = document.createElement('button');
-                btn.className = "btn-equipo";
-                btn.innerText = eq;
-                btn.onclick = () => {
-                    miEquipo = eq;
-                    document.getElementById('seleccion-equipo').style.display = 'none';
-                };
-                contenedor.appendChild(btn);
-            });
-        });
-
-        socket.on('actualizar_contador', (n) => {
-            document.getElementById('contador').innerText = `${n} personas online`;
-        });
-
-        socket.on('nuevo_comentario', (datos) => {
-            dibujarMensaje(datos.equipo, datos.texto, false);
-        });
-
-        function enviarMensaje() {
-            const caja = document.getElementById('cajaTexto');
-            if (caja.value.trim() !== "" && miEquipo !== "") {
-                socket.emit('enviar_comentario', { texto: caja.value, equipo: miEquipo });
-                dibujarMensaje(miEquipo, caja.value, true);
-                caja.value = "";
+        function actualizarPartido() {
+            const data = {
+                bar: barId,
+                equipo1: { nombre: document.getElementById('eq1').value, escudo: document.getElementById('img1').value },
+                equipo2: { nombre: document.getElementById('eq2').value, escudo: document.getElementById('img2').value }
+            };
+            if(data.equipo1.nombre && data.equipo2.nombre) {
+                socket.emit('admin_configurar_equipos', data);
+                alert("Partido actualizado correctamente.");
+            } else {
+                alert("Debes poner al menos los nombres de los equipos.");
             }
         }
 
-        // Permitir usar la tecla Enter
-        document.getElementById('cajaTexto').addEventListener("keypress", function(event) {
-            if (event.key === "Enter") {
-                event.preventDefault();
-                document.getElementById('btnEnviar').click();
-            }
-        });
-
-        function dibujarMensaje(equipo, texto, esPropio) {
-            const div = document.createElement('div');
-            div.className = "msg" + (esPropio ? " msg-propio" : "");
-            div.innerHTML = `<span class="equipo-tag">${equipo}</span> ${texto}`;
-            document.getElementById('chat-historial').appendChild(div);
-            document.getElementById('chat-historial').scrollTop = document.getElementById('chat-historial').scrollHeight;
+        function enviarOrden(orden) {
+            if(orden === 'admin_limpiar_chat' && !confirm("¿Borrar todos los mensajes?")) return;
+            socket.emit(orden, barId);
         }
-
-        socket.on('orden_limpiar_chat', () => document.getElementById('chat-historial').innerHTML = "");
-        socket.on('aviso_spam', (m) => alert(m));
-        
-        socket.on('orden_cerrar_chat', () => {
-            document.getElementById('cajaTexto').disabled = true;
-            document.getElementById('btnEnviar').disabled = true;
-            document.getElementById('cajaTexto').placeholder = "Chat cerrado 🔒";
-        });
-
-        socket.on('orden_abrir_chat', () => {
-            document.getElementById('cajaTexto').disabled = false;
-            document.getElementById('btnEnviar').disabled = false;
-            document.getElementById('cajaTexto').placeholder = "Escribe un mensaje...";
-        });
     </script>
 </body>
 </html>
