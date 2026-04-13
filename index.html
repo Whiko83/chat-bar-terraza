@@ -6,47 +6,44 @@
     <title>Chat de la Terraza</title>
     <style>
         body { font-family: sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; background-color: #f0f2f5; }
-        header { background: #0056b3; color: white; padding: 15px; text-align: center; font-weight: bold; }
+        header { background: #0056b3; color: white; padding: 15px; text-align: center; font-weight: bold; font-size: 18px; }
         #chat-historial { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
-        .mensaje { background: white; padding: 10px 15px; border-radius: 15px; max-width: 80%; align-self: flex-start; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-        .mensaje-propio { background: #dcf8c6; align-self: flex-end; } /* Color estilo WhatsApp para los tuyos */
+        .mensaje { background: white; padding: 10px 15px; border-radius: 15px; max-width: 85%; align-self: flex-start; box-shadow: 0 1px 2px rgba(0,0,0,0.1); word-wrap: break-word;}
+        .mensaje-propio { background: #dcf8c6; align-self: flex-end; } 
         .controles { display: flex; padding: 10px; background: white; border-top: 1px solid #ddd; }
-        input { flex-grow: 1; padding: 10px; border: 1px solid #ccc; border-radius: 20px; outline: none; }
-        button { padding: 10px 20px; margin-left: 10px; background: #0056b3; color: white; border: none; border-radius: 20px; cursor: pointer; }
+        input { flex-grow: 1; padding: 12px; border: 1px solid #ccc; border-radius: 20px; outline: none; font-size: 16px; }
+        input:disabled { background-color: #eee; }
+        button { padding: 12px 20px; margin-left: 10px; background: #0056b3; color: white; border: none; border-radius: 20px; cursor: pointer; font-size: 16px; }
+        button:disabled { background: #999; cursor: not-allowed; }
     </style>
 </head>
 <body>
 
-    <header>El Bar de la Terraza ⚽</header>
+    <header id="titulo-app">Cargando...</header>
     
     <div id="chat-historial"></div>
 
     <div class="controles">
         <input id="cajaTexto" type="text" placeholder="Escribe un mensaje..." autocomplete="off">
-        <button onclick="enviarMensaje()">Enviar</button>
+        <button id="btnEnviar" onclick="enviarMensaje()">Enviar</button>
     </div>
 
-  <script src="/socket.io/socket.io.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
         const historial = document.getElementById('chat-historial');
+        const caja = document.getElementById('cajaTexto');
+        const boton = document.getElementById('btnEnviar');
 
-        // 1. Leer el nombre del bar desde el enlace web
+        // Leer el nombre del bar desde el enlace URL (?bar=Nombre)
         const parametros = new URLSearchParams(window.location.search);
-        let nombreBar = parametros.get('bar'); // Busca lo que hay después de "?bar="
+        let nombreBar = parametros.get('bar') || "Bar Genérico";
+        document.getElementById('titulo-app').innerText = nombreBar + " ⚽";
 
-        // Si alguien entra sin QR, le ponemos un nombre genérico
-        if (!nombreBar) {
-            nombreBar = "Bar Genérico";
-        }
-
-        // 2. Cambiar el título azul de arriba por el nombre del bar
-        document.querySelector('header').innerText = nombreBar + " ⚽";
-
-        // 3. Decirle al servidor: "Oye, méteme en la sala de este bar"
+        // Unirse a la sala
         socket.emit('unirse_sala', nombreBar);
 
-        // ESCUCHAR mensajes (ahora solo llegarán los de tu sala)
+        // --- FUNCIONES DE CHAT ---
         socket.on('nuevo_comentario', (datos) => {
             const div = document.createElement('div');
             div.className = 'mensaje';
@@ -55,21 +52,49 @@
             historial.scrollTop = historial.scrollHeight;
         });
 
-        // ENVIAR
+        socket.on('aviso_spam', (mensaje) => {
+            alert(mensaje);
+        });
+
         function enviarMensaje() {
-            const input = document.getElementById('cajaTexto');
-            if (input.value.trim() !== "") {
-                socket.emit('enviar_comentario', { texto: input.value });
-                // Mensaje propio (opcional para verlo de otro color)
+            if (caja.value.trim() !== "") {
+                socket.emit('enviar_comentario', { texto: caja.value });
+                
+                // Mostrar mensaje propio
                 const divPropio = document.createElement('div');
                 divPropio.className = 'mensaje mensaje-propio';
-                divPropio.innerText = input.value;
+                divPropio.innerText = caja.value;
                 historial.appendChild(divPropio);
                 historial.scrollTop = historial.scrollHeight;
                 
-                input.value = "";
+                caja.value = "";
             }
         }
+
+        // Permitir enviar pulsando la tecla Enter
+        caja.addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                boton.click();
+            }
+        });
+
+        // --- ÓRDENES DEL ADMIN ---
+        socket.on('orden_cerrar_chat', () => {
+            caja.disabled = true;
+            boton.disabled = true;
+            caja.placeholder = "El partido terminó. Chat cerrado 🔒";
+        });
+
+        socket.on('orden_abrir_chat', () => {
+            caja.disabled = false;
+            boton.disabled = false;
+            caja.placeholder = "Escribe un mensaje...";
+        });
+
+        socket.on('orden_limpiar_chat', () => {
+            historial.innerHTML = ""; 
+        });
     </script>
 </body>
 </html>

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Control - Chat Terraza</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; text-align: center; background: #222; color: white;}
+        .panel { background: #333; padding: 30px; border-radius: 15px; margin-top: 20px; max-width: 400px; margin-left: auto; margin-right: auto; box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
+        h1 { font-size: 24px; color: #007bff;}
+        h2 { font-size: 20px; margin-bottom: 30px;}
+        button { display: block; width: 100%; padding: 20px; margin: 15px 0; font-size: 18px; border: none; border-radius: 10px; cursor: pointer; color: white; font-weight: bold; text-transform: uppercase;}
+        .btn-abrir { background: #28a745; }
+        .btn-cerrar { background: #dc3545; }
+        .btn-limpiar { background: #ffc107; color: black; margin-top: 40px; }
+    </style>
+</head>
+<body>
+
+    <h1 id="titulo-bar">Cargando Panel...</h1>
+    
+    <div class="panel">
+        <h2 id="estado-texto">Estado Actual: ABIERTO 🟢</h2>
+        <button class="btn-cerrar" onclick="cerrarChat()">Cerrar Chat (Final de partido)</button>
+        <button class="btn-abrir" onclick="abrirChat()">Abrir Chat (Inicio de partido)</button>
+        <button class="btn-limpiar" onclick="limpiarChat()">⚠️ Borrar todos los mensajes ⚠️</button>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const estadoTexto = document.getElementById('estado-texto');
+        
+        // Leemos de qué bar es este panel
+        const parametros = new URLSearchParams(window.location.search);
+        let nombreBar = parametros.get('bar') || "Bar Genérico";
+        document.getElementById('titulo-bar').innerText = "Panel: " + nombreBar;
+
+        socket.emit('unirse_sala', nombreBar);
+
+        function cerrarChat() {
+            socket.emit('admin_cerrar_chat', nombreBar);
+            estadoTexto.innerText = "Estado Actual: CERRADO 🔴";
+            estadoTexto.style.color = "#dc3545";
+        }
+
+        function abrirChat() {
+            socket.emit('admin_abrir_chat', nombreBar);
+            estadoTexto.innerText = "Estado Actual: ABIERTO 🟢";
+            estadoTexto.style.color = "#28a745";
+        }
+
+        function limpiarChat() {
+            if(confirm("¿Seguro que quieres BORRAR todos los mensajes de los clientes de tu bar? Esta acción no se puede deshacer.")) {
+                socket.emit('admin_limpiar_chat', nombreBar);
+            }
+        }
+    </script>
+</body>
+</html>
