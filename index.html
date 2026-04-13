@@ -3,97 +3,147 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat de la Terraza</title>
+    <title>Grada Virtual</title>
     <style>
-        body { font-family: sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; background-color: #f0f2f5; }
-        header { background: #0056b3; color: white; padding: 15px; text-align: center; font-weight: bold; font-size: 18px; }
-        #chat-historial { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
-        .mensaje { background: white; padding: 10px 15px; border-radius: 15px; max-width: 85%; align-self: flex-start; box-shadow: 0 1px 2px rgba(0,0,0,0.1); word-wrap: break-word;}
-        .mensaje-propio { background: #dcf8c6; align-self: flex-end; } 
-        .controles { display: flex; padding: 10px; background: white; border-top: 1px solid #ddd; }
-        input { flex-grow: 1; padding: 12px; border: 1px solid #ccc; border-radius: 20px; outline: none; font-size: 16px; }
-        input:disabled { background-color: #eee; }
-        button { padding: 12px 20px; margin-left: 10px; background: #0056b3; color: white; border: none; border-radius: 20px; cursor: pointer; font-size: 16px; }
-        button:disabled { background: #999; cursor: not-allowed; }
+        :root { --accent: #00e5ff; --text: #e0e0e0; }
+        body { font-family: sans-serif; margin: 0; color: var(--text); height: 100vh; display: flex; flex-direction: column; background-image: url('https://images.unsplash.com/photo-1518605368461-1ee7c5320d73?ixlib=rb-4.0.3&auto=format&fit=crop&w=1500&q=80'); background-size: cover; background-position: center; background-attachment: fixed; }
+        
+        header { background: rgba(20, 20, 20, 0.85); backdrop-filter: blur(10px); padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; }
+        #contador { font-size: 14px; color: var(--accent); }
+
+        #seleccion-equipo { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(10, 10, 10, 0.95); backdrop-filter: blur(15px); z-index: 100; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; }
+        
+        .btn-equipo { display: flex; align-items: center; justify-content: center; gap: 15px; width: 100%; max-width: 300px; padding: 15px; margin: 10px; border: 2px solid var(--accent); background: rgba(0, 0, 0, 0.5); color: white; font-size: 20px; font-weight: bold; border-radius: 10px; cursor: pointer; backdrop-filter: blur(5px); transition: 0.3s; }
+        .btn-equipo:hover { background: var(--accent); color: black; }
+        .escudo-btn { width: 40px; height: 40px; object-fit: contain; }
+
+        #chat-historial { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px); }
+        
+        .msg { background: rgba(40, 40, 40, 0.9); padding: 10px 15px; border-radius: 8px; max-width: 85%; box-shadow: 0 4px 6px rgba(0,0,0,0.3); display: flex; flex-direction: column; }
+        .msg-propio { align-self: flex-end; background: rgba(0, 123, 255, 0.9); }
+        
+        .equipo-header { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+        .escudo-chat { width: 20px; height: 20px; object-fit: contain; }
+        .equipo-tag { font-weight: bold; font-size: 12px; color: var(--accent); }
+        
+        .controles { display: flex; padding: 10px; background: rgba(20, 20, 20, 0.85); backdrop-filter: blur(10px); border-top: 1px solid rgba(255,255,255,0.1); }
+        input { flex-grow: 1; padding: 12px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.5); color: white; outline: none; }
+        input::placeholder { color: #aaa; }
+        button#btnEnviar { background: none; border: none; color: var(--accent); font-size: 24px; cursor: pointer; margin-left: 10px; }
     </style>
 </head>
 <body>
 
-    <header id="titulo-app">Cargando...</header>
-    
+    <div id="seleccion-equipo">
+        <h2>¿De qué equipo eres?</h2>
+        <div id="lista-equipos">Esperando configuración del bar...</div>
+    </div>
+
+    <header>
+        <span id="titulo-bar">Cargando...</span>
+        <span id="contador">0 personas online</span>
+    </header>
+
     <div id="chat-historial"></div>
 
     <div class="controles">
         <input id="cajaTexto" type="text" placeholder="Escribe un mensaje..." autocomplete="off">
-        <button id="btnEnviar" onclick="enviarMensaje()">Enviar</button>
+        <button id="btnEnviar" onclick="enviarMensaje()">➤</button>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
-        const historial = document.getElementById('chat-historial');
-        const caja = document.getElementById('cajaTexto');
-        const boton = document.getElementById('btnEnviar');
+        let miEquipo = null; // Ahora guardará el objeto entero {nombre, escudo}
+        const params = new URLSearchParams(window.location.search);
+        const nombreBar = params.get('bar') || "Bar Genérico";
 
-        // Leer el nombre del bar desde el enlace URL (?bar=Nombre)
-        const parametros = new URLSearchParams(window.location.search);
-        let nombreBar = parametros.get('bar') || "Bar Genérico";
-        document.getElementById('titulo-app').innerText = nombreBar + " ⚽";
-
-        // Unirse a la sala
+        document.getElementById('titulo-bar').innerText = nombreBar;
         socket.emit('unirse_sala', nombreBar);
 
-        // --- FUNCIONES DE CHAT ---
-        socket.on('nuevo_comentario', (datos) => {
-            const div = document.createElement('div');
-            div.className = 'mensaje';
-            div.innerText = datos.texto;
-            historial.appendChild(div);
-            historial.scrollTop = historial.scrollHeight;
+        socket.on('configuracion_equipos', (equipos) => {
+            const contenedor = document.getElementById('lista-equipos');
+            contenedor.innerHTML = "";
+            if (equipos.length === 0) {
+                contenedor.innerText = "El dueño aún no ha configurado los equipos de hoy.";
+                return;
+            }
+            equipos.forEach(eq => {
+                if(!eq || !eq.nombre) return;
+                
+                const btn = document.createElement('button');
+                btn.className = "btn-equipo";
+                
+                // Si el dueño puso una imagen, la dibujamos en el botón
+                let htmlBoton = "";
+                if(eq.escudo) {
+                    htmlBoton += `<img src="${eq.escudo}" class="escudo-btn">`;
+                }
+                htmlBoton += `<span>${eq.nombre}</span>`;
+                
+                btn.innerHTML = htmlBoton;
+                btn.onclick = () => {
+                    miEquipo = eq;
+                    document.getElementById('seleccion-equipo').style.display = 'none';
+                };
+                contenedor.appendChild(btn);
+            });
         });
 
-        socket.on('aviso_spam', (mensaje) => {
-            alert(mensaje);
+        socket.on('actualizar_contador', (n) => {
+            document.getElementById('contador').innerText = `${n} personas online`;
+        });
+
+        socket.on('nuevo_comentario', (datos) => {
+            dibujarMensaje(datos.equipo, datos.texto, false);
         });
 
         function enviarMensaje() {
-            if (caja.value.trim() !== "") {
-                socket.emit('enviar_comentario', { texto: caja.value });
-                
-                // Mostrar mensaje propio
-                const divPropio = document.createElement('div');
-                divPropio.className = 'mensaje mensaje-propio';
-                divPropio.innerText = caja.value;
-                historial.appendChild(divPropio);
-                historial.scrollTop = historial.scrollHeight;
-                
+            const caja = document.getElementById('cajaTexto');
+            if (caja.value.trim() !== "" && miEquipo !== null) {
+                socket.emit('enviar_comentario', { texto: caja.value, equipo: miEquipo });
+                dibujarMensaje(miEquipo, caja.value, true);
                 caja.value = "";
             }
         }
 
-        // Permitir enviar pulsando la tecla Enter
-        caja.addEventListener("keypress", function(event) {
+        document.getElementById('cajaTexto').addEventListener("keypress", function(event) {
             if (event.key === "Enter") {
                 event.preventDefault();
-                boton.click();
+                document.getElementById('btnEnviar').click();
             }
         });
 
-        // --- ÓRDENES DEL ADMIN ---
+        function dibujarMensaje(equipoData, texto, esPropio) {
+            const div = document.createElement('div');
+            div.className = "msg" + (esPropio ? " msg-propio" : "");
+            
+            // Construimos la cabecera del mensaje con el escudo si lo hay
+            let htmlCabecera = `<div class="equipo-header">`;
+            if (equipoData.escudo) {
+                htmlCabecera += `<img src="${equipoData.escudo}" class="escudo-chat">`;
+            }
+            htmlCabecera += `<span class="equipo-tag">${equipoData.nombre}</span></div>`;
+            
+            div.innerHTML = htmlCabecera + `<span>${texto}</span>`;
+            
+            document.getElementById('chat-historial').appendChild(div);
+            document.getElementById('chat-historial').scrollTop = document.getElementById('chat-historial').scrollHeight;
+        }
+
+        socket.on('orden_limpiar_chat', () => document.getElementById('chat-historial').innerHTML = "");
+        socket.on('aviso_spam', (m) => alert(m));
+        
         socket.on('orden_cerrar_chat', () => {
-            caja.disabled = true;
-            boton.disabled = true;
-            caja.placeholder = "El partido terminó. Chat cerrado 🔒";
+            document.getElementById('cajaTexto').disabled = true;
+            document.getElementById('btnEnviar').disabled = true;
+            document.getElementById('cajaTexto').placeholder = "Chat cerrado 🔒";
         });
 
         socket.on('orden_abrir_chat', () => {
-            caja.disabled = false;
-            boton.disabled = false;
-            caja.placeholder = "Escribe un mensaje...";
-        });
-
-        socket.on('orden_limpiar_chat', () => {
-            historial.innerHTML = ""; 
+            document.getElementById('cajaTexto').disabled = false;
+            document.getElementById('btnEnviar').disabled = false;
+            document.getElementById('cajaTexto').placeholder = "Escribe un mensaje...";
         });
     </script>
 </body>
