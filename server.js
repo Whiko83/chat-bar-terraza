@@ -1,92 +1,84 @@
-const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Control Bares</title>
+    <style>
+        body { font-family: sans-serif; background: #222; color: white; padding: 20px; text-align: center; }
+        .card { background: #333; padding: 20px; border-radius: 15px; max-width: 400px; margin: 20px auto; box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
+        .input-group { margin-bottom: 15px; text-align: left; background: #2a2a2a; padding: 10px; border-radius: 8px; }
+        .input-group label { font-size: 12px; color: #aaa; margin-left: 5px; text-transform: uppercase; }
+        input { width: 90%; padding: 10px; margin-top: 5px; border-radius: 5px; border: 1px solid #555; background: #444; color: white; }
+        button { width: 100%; padding: 15px; margin: 10px 0; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .btn-primary { background: #00e5ff; color: black; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-warning { background: #ffc107; color: black; }
+    </style>
+</head>
+<body>
 
-const app = express();
-const server = http.createServer(app);
-const io = new Server(server);
+    <h1 id="bar-nombre">Cargando...</h1>
 
-// --- CONFIGURACIÓN DE ESCUDOS ---
-const palabrasProhibidas = ['tonto', 'feo', 'idiota', 'árbitro comprado'];
-const registroTiempos = {};
-const TIEMPO_ESPERA = 5000; // 5 segundos
-const baresCerrados = {}; // Memoria para saber qué bares tienen el chat bloqueado
+    <div class="card">
+        <h3>⚽ Configurar Partido de Hoy</h3>
+        
+        <div class="input-group">
+            <label>Equipo Local</label>
+            <input id="eq1" type="text" placeholder="Ej: Real Madrid">
+            <input id="img1" type="text" placeholder="Pega el enlace del escudo (Opcional)">
+        </div>
 
-// --- RUTAS DE LAS PÁGINAS WEB ---
-app.get('/', (req, res) => { 
-  res.sendFile(__dirname + '/index.html'); 
-});
+        <div class="input-group">
+            <label>Equipo Visitante</label>
+            <input id="eq2" type="text" placeholder="Ej: FC Barcelona">
+            <input id="img2" type="text" placeholder="Pega el enlace del escudo (Opcional)">
+        </div>
 
-app.get('/admin', (req, res) => { 
-  res.sendFile(__dirname + '/admin.html'); 
-});
+        <button class="btn-primary" onclick="guardarEquipos()">ACTUALIZAR EQUIPOS Y ESCUDOS</button>
+    </div>
 
-// --- LÓGICA EN TIEMPO REAL ---
-io.on('connection', (socket) => {
-  console.log('Un nuevo usuario se ha conectado: ' + socket.id);
+    <div class="card">
+        <h3>⚙️ Control del Chat</h3>
+        <button class="btn-success" onclick="enviarOrden('admin_abrir_chat')">ABRIR CHAT</button>
+        <button class="btn-danger" onclick="enviarOrden('admin_cerrar_chat')">CERRAR CHAT</button>
+        <button class="btn-warning" onclick="enviarOrden('admin_limpiar_chat')">VACIAR PANTALLAS</button>
+    </div>
 
-  // 1. Asignación a la sala de un bar específico
-  socket.on('unirse_sala', (nombreBar) => {
-    socket.join(nombreBar);
-    socket.miSala = nombreBar; 
-    console.log(`Usuario conectado a la sala: ${nombreBar}`);
-  });
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const params = new URLSearchParams(window.location.search);
+        const nombreBar = params.get('bar') || "Bar Genérico";
+        document.getElementById('bar-nombre').innerText = "Panel: " + nombreBar;
 
-  // 2. Órdenes del Panel de Control (Dueño)
-  socket.on('admin_cerrar_chat', (nombreBar) => {
-    baresCerrados[nombreBar] = true;
-    socket.to(nombreBar).emit('orden_cerrar_chat');
-  });
+        socket.emit('unirse_sala', nombreBar);
 
-  socket.on('admin_abrir_chat', (nombreBar) => {
-    baresCerrados[nombreBar] = false;
-    socket.to(nombreBar).emit('orden_abrir_chat');
-  });
+        function guardarEquipos() {
+            const equipo1 = document.getElementById('eq1').value;
+            const img1 = document.getElementById('img1').value;
+            
+            const equipo2 = document.getElementById('eq2').value;
+            const img2 = document.getElementById('img2').value;
+            
+            if (equipo1 && equipo2) {
+                // Ahora enviamos un "Objeto" completo con el nombre y la imagen
+                socket.emit('admin_configurar_equipos', { 
+                    bar: nombreBar, 
+                    equipo1: { nombre: equipo1, escudo: img1 }, 
+                    equipo2: { nombre: equipo2, escudo: img2 } 
+                });
+                alert("¡Equipos y escudos actualizados en las pantallas de todos los clientes!");
+            } else {
+                alert("Por favor, introduce al menos el nombre de los dos equipos.");
+            }
+        }
 
-  socket.on('admin_limpiar_chat', (nombreBar) => {
-    socket.to(nombreBar).emit('orden_limpiar_chat');
-  });
-
-  // 3. Recepción de mensajes de los clientes
-  socket.on('enviar_comentario', (datos) => {
-    // Si el dueño ha cerrado el chat, bloqueamos el mensaje
-    if (baresCerrados[socket.miSala] === true) {
-        return; 
-    }
-
-    const tiempoActual = Date.now();
-
-    // Escudo Anti-Spam
-    if (registroTiempos[socket.id]) {
-      const tiempoPasado = tiempoActual - registroTiempos[socket.id];
-      if (tiempoPasado < TIEMPO_ESPERA) {
-        socket.emit('aviso_spam', 'Por favor, espera 5 segundos entre mensajes.');
-        return; 
-      }
-    }
-    registroTiempos[socket.id] = tiempoActual;
-
-    // Filtro de Palabras
-    let textoLimpio = datos.texto;
-    palabrasProhibidas.forEach(palabra => {
-      const regex = new RegExp(palabra, 'gi');
-      textoLimpio = textoLimpio.replace(regex, '***');
-    });
-    
-    // Emisión final a los móviles de la terraza
-    if (socket.miSala) {
-        socket.to(socket.miSala).emit('nuevo_comentario', { texto: textoLimpio });
-    }
-  });
-
-  // 4. Limpieza al salir
-  socket.on('disconnect', () => {
-    delete registroTiempos[socket.id]; 
-  });
-});
-
-// --- ARRANQUE AUTOMÁTICO EN RENDER ---
-const PUERTO = process.env.PORT || 3000;
-server.listen(PUERTO, () => {
-  console.log(`Servidor de chat funcionando en el puerto ${PUERTO}`);
-});
+        function enviarOrden(orden) {
+            if(orden === 'admin_limpiar_chat' && !confirm("¿Seguro que quieres borrar todos los mensajes?")) return;
+            socket.emit(orden, nombreBar);
+        }
+    </script>
+</body>
+</html>

@@ -3,58 +3,179 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel de Control - Chat Terraza</title>
+    <title>Grada Virtual</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; text-align: center; background: #222; color: white;}
-        .panel { background: #333; padding: 30px; border-radius: 15px; margin-top: 20px; max-width: 400px; margin-left: auto; margin-right: auto; box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
-        h1 { font-size: 24px; color: #007bff;}
-        h2 { font-size: 20px; margin-bottom: 30px;}
-        button { display: block; width: 100%; padding: 20px; margin: 15px 0; font-size: 18px; border: none; border-radius: 10px; cursor: pointer; color: white; font-weight: bold; text-transform: uppercase;}
-        .btn-abrir { background: #28a745; }
-        .btn-cerrar { background: #dc3545; }
-        .btn-limpiar { background: #ffc107; color: black; margin-top: 40px; }
+        :root { 
+            --accent: #00e5ff; 
+            --text: #e0e0e0; 
+        }
+        
+        body { 
+            font-family: sans-serif; 
+            margin: 0; 
+            color: var(--text); 
+            height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            
+            /* NUEVO: IMAGEN DE FONDO DEL ESTADIO */
+            background-image: url('https://images.unsplash.com/photo-1518605368461-1ee7c5320d73?ixlib=rb-4.0.3&auto=format&fit=crop&w=1500&q=80');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+        
+        /* NUEVO: EFECTO CRISTAL (Fondo negro semitransparente + Desenfocado) */
+        header { 
+            background: rgba(20, 20, 20, 0.85); /* 85% opaco */
+            backdrop-filter: blur(10px); /* Desenfoque estilo Apple */
+            padding: 15px; 
+            border-bottom: 1px solid rgba(255,255,255,0.1); 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+        }
+        #contador { font-size: 14px; color: var(--accent); }
+
+        #seleccion-equipo { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(10, 10, 10, 0.95); /* Casi negro para que no distraiga al elegir */
+            backdrop-filter: blur(15px);
+            z-index: 100; display: flex; flex-direction: column; 
+            justify-content: center; align-items: center; padding: 20px; box-sizing: border-box;
+        }
+        .btn-equipo { 
+            width: 100%; max-width: 300px; padding: 20px; margin: 10px; 
+            border: 2px solid var(--accent); background: rgba(0, 0, 0, 0.5); 
+            color: white; font-size: 18px; border-radius: 10px; cursor: pointer;
+            backdrop-filter: blur(5px);
+            transition: 0.3s;
+        }
+        .btn-equipo:hover { background: var(--accent); color: black; }
+
+        /* EL HISTORIAL AHORA ES MÁS TRANSPARENTE PARA DEJAR VER EL ESTADIO */
+        #chat-historial { 
+            flex-grow: 1; 
+            padding: 20px; 
+            overflow-y: auto; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 10px; 
+            background: rgba(0, 0, 0, 0.6); /* 60% opaco, deja ver la imagen */
+            backdrop-filter: blur(4px);
+        }
+        
+        .msg { background: rgba(40, 40, 40, 0.9); padding: 10px 15px; border-radius: 8px; max-width: 85%; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        .msg-propio { align-self: flex-end; background: rgba(0, 123, 255, 0.9); }
+        .equipo-tag { font-weight: bold; font-size: 12px; display: block; margin-bottom: 4px; color: var(--accent); }
+        
+        .controles { 
+            display: flex; 
+            padding: 10px; 
+            background: rgba(20, 20, 20, 0.85); 
+            backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(255,255,255,0.1); 
+        }
+        input { flex-grow: 1; padding: 12px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.5); color: white; outline: none; }
+        input::placeholder { color: #aaa; }
+        button#btnEnviar { background: none; border: none; color: var(--accent); font-size: 24px; cursor: pointer; margin-left: 10px; }
     </style>
 </head>
 <body>
 
-    <h1 id="titulo-bar">Cargando Panel...</h1>
-    
-    <div class="panel">
-        <h2 id="estado-texto">Estado Actual: ABIERTO 🟢</h2>
-        <button class="btn-cerrar" onclick="cerrarChat()">Cerrar Chat (Final de partido)</button>
-        <button class="btn-abrir" onclick="abrirChat()">Abrir Chat (Inicio de partido)</button>
-        <button class="btn-limpiar" onclick="limpiarChat()">⚠️ Borrar todos los mensajes ⚠️</button>
+    <div id="seleccion-equipo">
+        <h2>¿De qué equipo eres?</h2>
+        <div id="lista-equipos">Esperando configuración del bar...</div>
+    </div>
+
+    <header>
+        <span id="titulo-bar">Cargando...</span>
+        <span id="contador">0 personas online</span>
+    </header>
+
+    <div id="chat-historial"></div>
+
+    <div class="controles">
+        <input id="cajaTexto" type="text" placeholder="Escribe un mensaje..." autocomplete="off">
+        <button id="btnEnviar" onclick="enviarMensaje()">➤</button>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
-        const estadoTexto = document.getElementById('estado-texto');
-        
-        // Leemos de qué bar es este panel
-        const parametros = new URLSearchParams(window.location.search);
-        let nombreBar = parametros.get('bar') || "Bar Genérico";
-        document.getElementById('titulo-bar').innerText = "Panel: " + nombreBar;
+        let miEquipo = "";
+        const params = new URLSearchParams(window.location.search);
+        const nombreBar = params.get('bar') || "Bar Genérico";
 
+        document.getElementById('titulo-bar').innerText = nombreBar;
         socket.emit('unirse_sala', nombreBar);
 
-        function cerrarChat() {
-            socket.emit('admin_cerrar_chat', nombreBar);
-            estadoTexto.innerText = "Estado Actual: CERRADO 🔴";
-            estadoTexto.style.color = "#dc3545";
-        }
+        socket.on('configuracion_equipos', (equipos) => {
+            const contenedor = document.getElementById('lista-equipos');
+            contenedor.innerHTML = "";
+            if (equipos.length === 0) {
+                contenedor.innerText = "El dueño aún no ha configurado los equipos de hoy.";
+                return;
+            }
+            equipos.forEach(eq => {
+                const btn = document.createElement('button');
+                btn.className = "btn-equipo";
+                btn.innerText = eq;
+                btn.onclick = () => {
+                    miEquipo = eq;
+                    document.getElementById('seleccion-equipo').style.display = 'none';
+                };
+                contenedor.appendChild(btn);
+            });
+        });
 
-        function abrirChat() {
-            socket.emit('admin_abrir_chat', nombreBar);
-            estadoTexto.innerText = "Estado Actual: ABIERTO 🟢";
-            estadoTexto.style.color = "#28a745";
-        }
+        socket.on('actualizar_contador', (n) => {
+            document.getElementById('contador').innerText = `${n} personas online`;
+        });
 
-        function limpiarChat() {
-            if(confirm("¿Seguro que quieres BORRAR todos los mensajes de los clientes de tu bar? Esta acción no se puede deshacer.")) {
-                socket.emit('admin_limpiar_chat', nombreBar);
+        socket.on('nuevo_comentario', (datos) => {
+            dibujarMensaje(datos.equipo, datos.texto, false);
+        });
+
+        function enviarMensaje() {
+            const caja = document.getElementById('cajaTexto');
+            if (caja.value.trim() !== "" && miEquipo !== "") {
+                socket.emit('enviar_comentario', { texto: caja.value, equipo: miEquipo });
+                dibujarMensaje(miEquipo, caja.value, true);
+                caja.value = "";
             }
         }
+
+        // Permitir usar la tecla Enter
+        document.getElementById('cajaTexto').addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                document.getElementById('btnEnviar').click();
+            }
+        });
+
+        function dibujarMensaje(equipo, texto, esPropio) {
+            const div = document.createElement('div');
+            div.className = "msg" + (esPropio ? " msg-propio" : "");
+            div.innerHTML = `<span class="equipo-tag">${equipo}</span> ${texto}`;
+            document.getElementById('chat-historial').appendChild(div);
+            document.getElementById('chat-historial').scrollTop = document.getElementById('chat-historial').scrollHeight;
+        }
+
+        socket.on('orden_limpiar_chat', () => document.getElementById('chat-historial').innerHTML = "");
+        socket.on('aviso_spam', (m) => alert(m));
+        
+        socket.on('orden_cerrar_chat', () => {
+            document.getElementById('cajaTexto').disabled = true;
+            document.getElementById('btnEnviar').disabled = true;
+            document.getElementById('cajaTexto').placeholder = "Chat cerrado 🔒";
+        });
+
+        socket.on('orden_abrir_chat', () => {
+            document.getElementById('cajaTexto').disabled = false;
+            document.getElementById('btnEnviar').disabled = false;
+            document.getElementById('cajaTexto').placeholder = "Escribe un mensaje...";
+        });
     </script>
 </body>
 </html>
