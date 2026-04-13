@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat de la Terraza</title>
+    <style>
+        body { font-family: sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; background-color: #f0f2f5; }
+        header { background: #0056b3; color: white; padding: 15px; text-align: center; font-weight: bold; }
+        #chat-historial { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .mensaje { background: white; padding: 10px 15px; border-radius: 15px; max-width: 80%; align-self: flex-start; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .mensaje-propio { background: #dcf8c6; align-self: flex-end; } /* Color estilo WhatsApp para los tuyos */
+        .controles { display: flex; padding: 10px; background: white; border-top: 1px solid #ddd; }
+        input { flex-grow: 1; padding: 10px; border: 1px solid #ccc; border-radius: 20px; outline: none; }
+        button { padding: 10px 20px; margin-left: 10px; background: #0056b3; color: white; border: none; border-radius: 20px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <header>El Bar de la Terraza ⚽</header>
+    
+    <div id="chat-historial"></div>
+
+    <div class="controles">
+        <input id="cajaTexto" type="text" placeholder="Escribe un mensaje..." autocomplete="off">
+        <button onclick="enviarMensaje()">Enviar</button>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const historial = document.getElementById('chat-historial');
+
+        // ESCUCHAR: Cuando llegue un mensaje del servidor, lo pintamos
+        socket.on('nuevo_comentario', (datos) => {
+            const div = document.createElement('div');
+            div.className = 'mensaje';
+            div.innerText = datos.texto;
+            historial.appendChild(div);
+            
+            // Hacemos scroll automático hacia abajo
+            historial.scrollTop = historial.scrollHeight;
+        });
+
+        // ENVIAR: Cuando le damos al botón
+        function enviarMensaje() {
+            const input = document.getElementById('cajaTexto');
+            if (input.value.trim() !== "") {
+                socket.emit('enviar_comentario', { texto: input.value });
+                input.value = "";
+            }
+        }
+    </script>
+</body>
+</html>
