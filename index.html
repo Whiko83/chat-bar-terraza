@@ -26,27 +26,47 @@
         <button onclick="enviarMensaje()">Enviar</button>
     </div>
 
-    <script src="/socket.io/socket.io.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
         const historial = document.getElementById('chat-historial');
 
-        // ESCUCHAR: Cuando llegue un mensaje del servidor, lo pintamos
+        // 1. Leer el nombre del bar desde el enlace web
+        const parametros = new URLSearchParams(window.location.search);
+        let nombreBar = parametros.get('bar'); // Busca lo que hay después de "?bar="
+
+        // Si alguien entra sin QR, le ponemos un nombre genérico
+        if (!nombreBar) {
+            nombreBar = "Bar Genérico";
+        }
+
+        // 2. Cambiar el título azul de arriba por el nombre del bar
+        document.querySelector('header').innerText = nombreBar + " ⚽";
+
+        // 3. Decirle al servidor: "Oye, méteme en la sala de este bar"
+        socket.emit('unirse_sala', nombreBar);
+
+        // ESCUCHAR mensajes (ahora solo llegarán los de tu sala)
         socket.on('nuevo_comentario', (datos) => {
             const div = document.createElement('div');
             div.className = 'mensaje';
             div.innerText = datos.texto;
             historial.appendChild(div);
-            
-            // Hacemos scroll automático hacia abajo
             historial.scrollTop = historial.scrollHeight;
         });
 
-        // ENVIAR: Cuando le damos al botón
+        // ENVIAR
         function enviarMensaje() {
             const input = document.getElementById('cajaTexto');
             if (input.value.trim() !== "") {
                 socket.emit('enviar_comentario', { texto: input.value });
+                // Mensaje propio (opcional para verlo de otro color)
+                const divPropio = document.createElement('div');
+                divPropio.className = 'mensaje mensaje-propio';
+                divPropio.innerText = input.value;
+                historial.appendChild(divPropio);
+                historial.scrollTop = historial.scrollHeight;
+                
                 input.value = "";
             }
         }
