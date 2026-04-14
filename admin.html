@@ -69,13 +69,56 @@
 
         // --- TU BASE DE DATOS DE EQUIPOS ---
         // Aquí añades todos los equipos. En 'escudo' puedes poner un enlace de Wikipedia seguro o tu archivo local ej: "/madrid.png" si lo tienes en la carpeta public.
+      // --- BASE DE DATOS COMPLETA: PRIMERA Y SEGUNDA DIVISIÓN ---
         const baseDatosEquipos = [
-            { id: "rma", nombre: "Real Madrid", escudo: "https://upload.wikimedia.org/wikipedia/en/5/56/Real_Madrid_CF.svg" },
-            { id: "fcb", nombre: "Barcelona", escudo: "https://upload.wikimedia.org/wikipedia/en/4/47/FC_Barcelona_%28crest%29.svg" },
-            { id: "atm", nombre: "Atlético", escudo: "https://upload.wikimedia.org/wikipedia/en/f/f4/Atletico_Madrid_2017_logo.svg" },
-            { id: "sev", nombre: "Sevilla FC", escudo: "https://upload.wikimedia.org/wikipedia/en/3/3b/Sevilla_FC_logo.svg" },
-            { id: "bet", nombre: "Real Betis", escudo: "https://upload.wikimedia.org/wikipedia/en/1/13/Real_betis_logo.svg" },
-            { id: "ath", nombre: "Athletic Club", escudo: "https://upload.wikimedia.org/wikipedia/en/9/98/Club_Athletic_Bilbao_logo.svg" }
+            // Los que ya has subido
+            { id: "ala", nombre: "Alavés", escudo: "/alaves.png" },
+            { id: "alb", nombre: "Albacete", escudo: "/albacete.jpg" },
+            { id: "alm", nombre: "Almería", escudo: "/almeria.jpg" },
+            { id: "and", nombre: "FC Andorra", escudo: "/andorra.png" },
+            { id: "ath", nombre: "Athletic Club", escudo: "/athletic.png" },
+            { id: "atm", nombre: "Atlético de Madrid", escudo: "/atlmadrid.png" },
+            { id: "fcb", nombre: "FC Barcelona", escudo: "/barcelona.png" },
+            { id: "bet", nombre: "Real Betis", escudo: "/betis.png" },
+            { id: "bur", nombre: "Burgos CF", escudo: "/burgos.png" },
+            { id: "cad", nombre: "Cádiz CF", escudo: "/cadiz.jpg" },
+
+            // Resto de Primera División
+            { id: "cel", nombre: "Celta de Vigo", escudo: "/celta.png" },
+            { id: "esp", nombre: "RCD Espanyol", escudo: "/espanyol.png" },
+            { id: "get", nombre: "Getafe CF", escudo: "/getafe.png" },
+            { id: "gir", nombre: "Girona FC", escudo: "/girona.png" },
+            { id: "lpa", nombre: "UD Las Palmas", escudo: "/laspalmas.png" },
+            { id: "leg", nombre: "CD Leganés", escudo: "/leganes.png" },
+            { id: "mal", nombre: "RCD Mallorca", escudo: "/mallorca.png" },
+            { id: "osa", nombre: "CA Osasuna", escudo: "/osasuna.png" },
+            { id: "ray", nombre: "Rayo Vallecano", escudo: "/rayo.png" },
+            { id: "rma", nombre: "Real Madrid", escudo: "/realmadrid.png" },
+            { id: "rso", nombre: "Real Sociedad", escudo: "/realsociedad.png" },
+            { id: "sev", nombre: "Sevilla FC", escudo: "/sevilla.png" },
+            { id: "val", nombre: "Valencia CF", escudo: "/valencia.png" },
+            { id: "vll", nombre: "Real Valladolid", escudo: "/valladolid.png" },
+            { id: "vil", nombre: "Villarreal CF", escudo: "/villarreal.png" },
+
+            // Resto de Segunda División
+            { id: "car", nombre: "FC Cartagena", escudo: "/cartagena.png" },
+            { id: "cas", nombre: "CD Castellón", escudo: "/castellon.png" },
+            { id: "cor", nombre: "Córdoba CF", escudo: "/cordoba.png" },
+            { id: "dep", nombre: "Deportivo de La Coruña", escudo: "/deportivo.png" },
+            { id: "eib", nombre: "SD Eibar", escudo: "/eibar.png" },
+            { id: "elc", nombre: "Elche CF", escudo: "/elche.png" },
+            { id: "eld", nombre: "CD Eldense", escudo: "/eldense.png" },
+            { id: "fer", nombre: "Racing de Ferrol", escudo: "/ferrol.png" },
+            { id: "gra", nombre: "Granada CF", escudo: "/granada.png" },
+            { id: "hue", nombre: "SD Huesca", escudo: "/huesca.png" },
+            { id: "lev", nombre: "Levante UD", escudo: "/levante.png" },
+            { id: "mlg", nombre: "Málaga CF", escudo: "/malaga.png" },
+            { id: "mir", nombre: "CD Mirandés", escudo: "/mirandes.png" },
+            { id: "ovi", nombre: "Real Oviedo", escudo: "/oviedo.png" },
+            { id: "rac", nombre: "Racing de Santander", escudo: "/racing.png" },
+            { id: "spo", nombre: "Sporting de Gijón", escudo: "/sporting.png" },
+            { id: "ten", nombre: "CD Tenerife", escudo: "/tenerife.png" },
+            { id: "zar", nombre: "Real Zaragoza", escudo: "/zaragoza.png" }
         ];
 
         let localSeleccionado = null;
