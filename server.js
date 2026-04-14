@@ -3,6 +3,8 @@ const http = require('http');
 const { Server } = require('socket.io');
 
 const app = express();
+// NUEVA LÍNEA MÁGICA: Permite usar imágenes guardadas en una carpeta llamada "public"
+app.use(express.static('public'));
 const server = http.createServer(app);
 const io = new Server(server);
 

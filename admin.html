@@ -3,75 +3,148 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel de Control - Grada Virtual</title>
+    <title>Panel de Control - Galería</title>
     <style>
         :root { --accent: #00e5ff; --bg: #121212; --card: #1e1e1e; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; padding: 20px; margin: 0; }
-        .container { max-width: 500px; margin: 0 auto; }
-        h1 { color: var(--accent); text-align: center; font-size: 24px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        h1 { color: var(--accent); text-align: center; }
         
         .card { background: var(--card); padding: 20px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-        .card h3 { margin-top: 0; border-bottom: 1px solid #333; padding-bottom: 10px; font-size: 18px; }
+        .card h3 { margin-top: 0; border-bottom: 1px solid #333; padding-bottom: 10px; text-align: center; }
         
-        .input-group { margin-bottom: 15px; }
-        label { display: block; font-size: 12px; color: #888; text-transform: uppercase; margin-bottom: 5px; }
-        input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #333; background: #2a2a2a; color: white; box-sizing: border-box; }
+        /* ESTILOS DE LA GALERÍA */
+        .galeria { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 20px; }
+        .equipo-item { 
+            background: #2a2a2a; border: 2px solid transparent; border-radius: 10px; padding: 10px; 
+            width: 80px; text-align: center; cursor: pointer; transition: 0.2s;
+        }
+        .equipo-item img { width: 40px; height: 40px; object-fit: contain; margin-bottom: 5px; }
+        .equipo-item span { display: block; font-size: 10px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         
-        button { width: 100%; padding: 15px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; text-transform: uppercase; margin-top: 10px; transition: 0.2s; }
+        /* ESTADOS DE SELECCIÓN */
+        .equipo-item:hover { background: #3a3a3a; }
+        .equipo-item.seleccionado-local { border-color: #00e5ff; background: rgba(0, 229, 255, 0.1); }
+        .equipo-item.seleccionado-visitante { border-color: #ff0055; background: rgba(255, 0, 85, 0.1); }
+
+        .resumen { text-align: center; font-size: 18px; font-weight: bold; margin: 15px 0; background: #111; padding: 15px; border-radius: 8px; }
+        .vs { color: #888; font-size: 14px; margin: 0 10px; }
+
+        button { width: 100%; padding: 15px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; text-transform: uppercase; margin-top: 10px; }
         .btn-main { background: var(--accent); color: #000; }
-        .btn-main:active { transform: scale(0.98); }
-        .btn-open { background: #28a745; color: white; }
-        .btn-close { background: #dc3545; color: white; }
-        .btn-clear { background: #ffc107; color: black; }
+        .btn-control { background: #333; color: white; border: 1px solid #555; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1 id="bar-display">Panel de Administración</h1>
+        <h1 id="bar-display">Panel: Cargando...</h1>
 
         <div class="card">
-            <h3>🏟️ Configurar Partido</h3>
-            <div class="input-group">
-                <label>Equipo Local</label>
-                <input id="eq1" type="text" placeholder="Ej: Real Madrid">
-                <input id="img1" type="text" placeholder="URL del escudo (Opcional)">
+            <h3>🏟️ Selecciona el Partido</h3>
+            <p style="font-size: 12px; color: #aaa; text-align: center;">Haz clic en 2 equipos (Local y Visitante)</p>
+            
+            <div id="contenedor-galeria" class="galeria"></div>
+
+            <div class="resumen" id="texto-resumen">
+                Selecciona los equipos arriba
             </div>
-            <div class="input-group">
-                <label>Equipo Visitante</label>
-                <input id="eq2" type="text" placeholder="Ej: FC Barcelona">
-                <input id="img2" type="text" placeholder="URL del escudo (Opcional)">
-            </div>
-            <button class="btn-main" onclick="actualizarPartido()">Actualizar Grada Virtual</button>
+
+            <button class="btn-main" onclick="actualizarPartido()">Emitir a la Terraza</button>
         </div>
 
         <div class="card">
-            <h3>⚙️ Gestión del Chat</h3>
-            <button class="btn-open" onclick="enviarOrden('admin_abrir_chat')">Abrir Chat</button>
-            <button class="btn-close" onclick="enviarOrden('admin_cerrar_chat')">Cerrar Chat</button>
-            <button class="btn-clear" onclick="enviarOrden('admin_limpiar_chat')">Vaciar Mensajes</button>
+            <h3>⚙️ Gestión Rápida</h3>
+            <button class="btn-control" onclick="enviarOrden('admin_abrir_chat')" style="border-color: #28a745;">Abrir Chat</button>
+            <button class="btn-control" onclick="enviarOrden('admin_cerrar_chat')" style="border-color: #dc3545;">Cerrar Chat</button>
+            <button class="btn-control" onclick="enviarOrden('admin_limpiar_chat')" style="border-color: #ffc107; margin-top: 20px;">⚠️ Vaciar Pantallas</button>
         </div>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
-        const params = new URLSearchParams(window.location.search);
-        const barId = params.get('bar') || "Bar Genérico";
+        const barId = new URLSearchParams(window.location.search).get('bar') || "Bar Genérico";
         document.getElementById('bar-display').innerText = "Panel: " + barId;
-
         socket.emit('unirse_sala', barId);
 
-        function actualizarPartido() {
-            const data = {
-                bar: barId,
-                equipo1: { nombre: document.getElementById('eq1').value, escudo: document.getElementById('img1').value },
-                equipo2: { nombre: document.getElementById('eq2').value, escudo: document.getElementById('img2').value }
-            };
-            if(data.equipo1.nombre && data.equipo2.nombre) {
-                socket.emit('admin_configurar_equipos', data);
-                alert("Partido actualizado correctamente.");
+        // --- TU BASE DE DATOS DE EQUIPOS ---
+        // Aquí añades todos los equipos. En 'escudo' puedes poner un enlace de Wikipedia seguro o tu archivo local ej: "/madrid.png" si lo tienes en la carpeta public.
+        const baseDatosEquipos = [
+            { id: "rma", nombre: "Real Madrid", escudo: "https://upload.wikimedia.org/wikipedia/en/5/56/Real_Madrid_CF.svg" },
+            { id: "fcb", nombre: "Barcelona", escudo: "https://upload.wikimedia.org/wikipedia/en/4/47/FC_Barcelona_%28crest%29.svg" },
+            { id: "atm", nombre: "Atlético", escudo: "https://upload.wikimedia.org/wikipedia/en/f/f4/Atletico_Madrid_2017_logo.svg" },
+            { id: "sev", nombre: "Sevilla FC", escudo: "https://upload.wikimedia.org/wikipedia/en/3/3b/Sevilla_FC_logo.svg" },
+            { id: "bet", nombre: "Real Betis", escudo: "https://upload.wikimedia.org/wikipedia/en/1/13/Real_betis_logo.svg" },
+            { id: "ath", nombre: "Athletic Club", escudo: "https://upload.wikimedia.org/wikipedia/en/9/98/Club_Athletic_Bilbao_logo.svg" }
+        ];
+
+        let localSeleccionado = null;
+        let visitanteSeleccionado = null;
+
+        // Dibujar la galería en la pantalla
+        const contenedor = document.getElementById('contenedor-galeria');
+        baseDatosEquipos.forEach(equipo => {
+            const div = document.createElement('div');
+            div.className = 'equipo-item';
+            div.innerHTML = `<img src="${equipo.escudo}" alt="${equipo.nombre}"><span>${equipo.nombre}</span>`;
+            
+            div.onclick = () => seleccionarEquipo(equipo, div);
+            contenedor.appendChild(div);
+        });
+
+        // Lógica para elegir Local y Visitante
+        function seleccionarEquipo(equipo, elementoDiv) {
+            if (localSeleccionado === equipo) {
+                localSeleccionado = null; // Desmarcar
+            } else if (visitanteSeleccionado === equipo) {
+                visitanteSeleccionado = null; // Desmarcar
+            } else if (!localSeleccionado) {
+                localSeleccionado = equipo;
+            } else if (!visitanteSeleccionado) {
+                visitanteSeleccionado = equipo;
             } else {
-                alert("Debes poner al menos los nombres de los equipos.");
+                // Si ya hay dos, cambiamos el visitante por el nuevo
+                visitanteSeleccionado = equipo; 
+            }
+            actualizarVista();
+        }
+
+        // Refrescar los colores y el texto
+        function actualizarVista() {
+            // Limpiar clases
+            document.querySelectorAll('.equipo-item').forEach(el => {
+                el.classList.remove('seleccionado-local', 'seleccionado-visitante');
+            });
+
+            const resumen = document.getElementById('texto-resumen');
+            
+            if (localSeleccionado && visitanteSeleccionado) {
+                resumen.innerHTML = `<span style="color: #00e5ff">${localSeleccionado.nombre}</span> <span class="vs">VS</span> <span style="color: #ff0055">${visitanteSeleccionado.nombre}</span>`;
+            } else if (localSeleccionado) {
+                resumen.innerHTML = `Esperando al visitante...`;
+            } else {
+                resumen.innerHTML = `Selecciona los equipos arriba`;
+            }
+
+            // Pintar los seleccionados en la galería
+            const items = document.querySelectorAll('.equipo-item');
+            baseDatosEquipos.forEach((eq, index) => {
+                if (eq === localSeleccionado) items[index].classList.add('seleccionado-local');
+                if (eq === visitanteSeleccionado) items[index].classList.add('seleccionado-visitante');
+            });
+        }
+
+        // Enviar al servidor
+        function actualizarPartido() {
+            if(localSeleccionado && visitanteSeleccionado) {
+                socket.emit('admin_configurar_equipos', {
+                    bar: barId,
+                    equipo1: { nombre: localSeleccionado.nombre, escudo: localSeleccionado.escudo },
+                    equipo2: { nombre: visitanteSeleccionado.nombre, escudo: visitanteSeleccionado.escudo }
+                });
+                alert(`¡Partido ${localSeleccionado.nombre} vs ${visitanteSeleccionado.nombre} emitido a la terraza!`);
+            } else {
+                alert("Debes seleccionar dos equipos en la galería.");
             }
         }
 
